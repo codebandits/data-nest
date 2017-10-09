@@ -1,1 +1,3 @@
 rootProject.name = 'data-nest'
+
+include 'data-nest'
