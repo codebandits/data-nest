@@ -1,3 +1,4 @@
 rootProject.name = 'data-nest'
 
 include 'data-nest'
+include 'examples/spring-boot-kotlin'

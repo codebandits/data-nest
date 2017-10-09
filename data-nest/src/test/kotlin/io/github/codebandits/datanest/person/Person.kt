@@ -25,10 +25,7 @@ data class PersonNew(
 
 class PersonRepository : Repository<Person, PersonNew, Int>(PersonTable) {
 
-    override fun Person.selectExisting(): SqlExpressionBuilder.() -> Op<Boolean> {
-        val personId = this.id
-        return { PersonTable.id eq personId }
-    }
+    override fun Person.selectExisting(): SqlExpressionBuilder.() -> Op<Boolean> = { PersonTable.id eq id }
 
     override fun PersonNew.insert(insertStatement: InsertStatement<EntityID<Int>>) {
         insertStatement[PersonTable.name] = this.name
