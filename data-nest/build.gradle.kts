@@ -30,13 +30,26 @@ tasks.withType<KotlinCompile> {
 
 repositories {
     mavenCentral()
+    maven("https://dl.bintray.com/kotlin/exposed")
+    maven("https://jitpack.io")
 }
 
 val junitJupiterVersion = "5.0.1"
+val assertjVersion = "3.8.0"
+val exposedVersion = "0.8.6"
+val h2Version = "1.4.196"
+val resultsVersion = "9fca3475d5"
 
 dependencies {
     compile("org.jetbrains.kotlin:kotlin-stdlib-jre8")
 
+    compile("org.jetbrains.exposed:exposed:$exposedVersion")
+    testRuntime("com.h2database:h2:$h2Version")
+
+    compile("com.github.codebandits.results:results:$resultsVersion")
+    testCompile("com.github.codebandits.results:results-test:$resultsVersion")
+
     testCompile("org.junit.jupiter:junit-jupiter-api:$junitJupiterVersion")
     testRuntime("org.junit.jupiter:junit-jupiter-engine:$junitJupiterVersion")
+    testCompile("org.assertj:assertj-core:$assertjVersion")
 }
