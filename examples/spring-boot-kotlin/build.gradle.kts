@@ -1,8 +1,15 @@
+import org.gradle.kotlin.dsl.extra
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
+val junitJupiterVersion: String by project.extra
+val assertjVersion: String by project.extra
+val exposedVersion: String by project.extra
+val h2Version: String by project.extra
+val resultsVersion: String by project.extra
+
 buildscript {
-    val junitPlatformVersion = "1.0.1"
-    val springBootVersion = "2.0.0.M4"
+    val springBootVersion: String by project.extra
+    val junitPlatformVersion: String by project.extra
     repositories {
         mavenCentral()
         maven("https://repo.spring.io/milestone")
@@ -36,18 +43,12 @@ tasks.withType<KotlinCompile> {
 repositories {
     mavenCentral()
     maven("https://repo.spring.io/milestone")
-    maven("https://dl.bintray.com/kotlin/exposed") // TODO: needed?
+    maven("https://dl.bintray.com/kotlin/exposed")
     maven("https://jitpack.io")
 }
 
-val junitJupiterVersion = "5.0.1"
-val assertjVersion = "3.8.0"
-val exposedVersion = "0.8.6"
-val h2Version = "1.4.196"
-val resultsVersion = "9fca3475d5"
-
 dependencies {
-    compile("org.jetbrains.kotlin:kotlin-stdlib-jre8")
+    compile(kotlin("stdlib-jre8"))
 
     compile("org.springframework.boot:spring-boot-starter-web")
 
