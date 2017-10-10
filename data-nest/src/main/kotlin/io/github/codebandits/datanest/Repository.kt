@@ -21,7 +21,7 @@ abstract class Repository<ModelType, in ModelNewType, IdType : Any>(private val 
                 .mapError { RepositoryFailure.SaveFailed(exception = it) as RepositoryFailure }
                 .flatMap { it.presenceAsResult().mapError { RepositoryFailure.SaveFailed() as RepositoryFailure } }
                 .map { it.value }
-                .flatMap(this::findOne)
+                .flatMap { findOne { table.id eq it } }
     }
 
     fun update(model: ModelType): Result<RepositoryFailure, ModelType> {
@@ -30,14 +30,6 @@ abstract class Repository<ModelType, in ModelNewType, IdType : Any>(private val 
                 .flatMap { wrapThrowableInResult { table.select(model.selectExisting()) }.mapError { RepositoryFailure.NotFound(exception = it) as RepositoryFailure } }
                 .flatMap { it.ensureSingle() }
                 .map { resultRow -> resultRow.toModel() }
-    }
-
-    fun findOne(id: IdType): Result<RepositoryFailure, ModelType> {
-        return table.select { table.id eq id }
-                .presenceAsResult()
-                .mapError { RepositoryFailure.NotFound() as RepositoryFailure }
-                .flatMap { it.ensureSingle() }
-                .map { it.toModel() }
     }
 
     fun findOne(where: SqlExpressionBuilder.() -> Op<Boolean>): Result<RepositoryFailure, ModelType> {

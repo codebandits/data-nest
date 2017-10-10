@@ -48,29 +48,6 @@ class RepositoryTest {
     }
 
     @Test
-    fun `findOne by ID should return the model`() {
-        transaction {
-            SchemaUtils.create(PersonTable)
-
-            repository.create(starLord) succeedsAnd { createdPerson ->
-
-                repository.findOne(createdPerson.id) succeedsAnd { retrievedPerson ->
-                    assertThat(retrievedPerson.name).isEqualTo("Star-Lord")
-                }
-            }
-        }
-    }
-
-    @Test
-    fun `findOne by ID when ID does not exist should fail`() {
-        transaction {
-            SchemaUtils.create(PersonTable)
-
-            repository.findOne(99) failsWithA RepositoryFailure.NotFound::class
-        }
-    }
-
-    @Test
     fun `update should return the model`() {
         transaction {
             SchemaUtils.create(PersonTable)
