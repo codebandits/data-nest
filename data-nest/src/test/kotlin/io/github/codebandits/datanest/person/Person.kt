@@ -1,6 +1,9 @@
 package io.github.codebandits.datanest.person
 
 import io.github.codebandits.datanest.Repository
+import io.github.codebandits.datanest.RepositoryFailure
+import io.github.codebandits.results.Result
+import io.github.codebandits.results.Success
 import org.jetbrains.exposed.dao.EntityID
 import org.jetbrains.exposed.dao.IntIdTable
 import org.jetbrains.exposed.sql.Column
@@ -35,10 +38,10 @@ class PersonRepository : Repository<Person, PersonNew, Int>(PersonTable) {
         updateStatement[PersonTable.name] = this.name
     }
 
-    override fun ResultRow.toModel(): Person {
-        return Person(
+    override fun ResultRow.toModel(): Result<RepositoryFailure, Person> {
+        return Success(Person(
                 id = this[PersonTable.id].value,
                 name = this[PersonTable.name]
-        )
+        ))
     }
 }

@@ -1,6 +1,9 @@
 package io.codebandits.datanest.examples.springbootkotlin.group
 
 import io.github.codebandits.datanest.Repository
+import io.github.codebandits.datanest.RepositoryFailure
+import io.github.codebandits.results.Result
+import io.github.codebandits.results.Success
 import org.jetbrains.exposed.dao.EntityID
 import org.jetbrains.exposed.dao.IntIdTable
 import org.jetbrains.exposed.sql.Column
@@ -24,8 +27,10 @@ data class GroupNew(
 
 class GroupRepository : Repository<Group, GroupNew, Int>(GroupTable) {
 
-    override fun ResultRow.toModel(): Group {
-        return Group(name = this[GroupTable.name])
+    override fun ResultRow.toModel(): Result<RepositoryFailure, Group> {
+        return Success(Group(
+                name = this[GroupTable.name]
+        ))
     }
 
     override fun GroupNew.insert(insertStatement: InsertStatement<EntityID<Int>>) {

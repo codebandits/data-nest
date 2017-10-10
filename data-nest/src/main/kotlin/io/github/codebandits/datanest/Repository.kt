@@ -1,11 +1,8 @@
 package io.github.codebandits.datanest
 
-import io.github.codebandits.results.Result
+import io.github.codebandits.results.*
 import io.github.codebandits.results.adapters.presenceAsResult
 import io.github.codebandits.results.adapters.wrapThrowableInResult
-import io.github.codebandits.results.flatMap
-import io.github.codebandits.results.map
-import io.github.codebandits.results.mapError
 import org.jetbrains.exposed.dao.EntityID
 import org.jetbrains.exposed.dao.IdTable
 import org.jetbrains.exposed.sql.*
@@ -28,7 +25,7 @@ abstract class Repository<ModelType, in ModelNewType, IdType : Any>(private val 
                 .mapError { RepositoryFailure.SaveFailed(exception = it) as RepositoryFailure }
                 .flatMap { wrapThrowableInResult { table.select(model.toUniqueSelect()) }.mapError { RepositoryFailure.NotFound(exception = it) as RepositoryFailure } }
                 .flatMap { it.ensureSingle() }
-                .map { resultRow -> resultRow.toModel() }
+                .flatMap { it.toModel() }
     }
 
     fun getRow(model: ModelType): Result<RepositoryFailure, ResultRow> {
@@ -42,18 +39,18 @@ abstract class Repository<ModelType, in ModelNewType, IdType : Any>(private val 
                 .presenceAsResult()
                 .mapError { RepositoryFailure.NotFound() as RepositoryFailure }
                 .flatMap { it.ensureSingle() }
-                .map { it.toModel() }
+                .flatMap { it.toModel() }
     }
 
     fun findOne(where: SqlExpressionBuilder.() -> Op<Boolean>): Result<RepositoryFailure, ModelType> {
         return findOneRow(where)
-                .map { resultRow -> resultRow.toModel() }
+                .flatMap { it.toModel() }
     }
 
-    fun findAll(where: SqlExpressionBuilder.() -> Op<Boolean>): Result<Unit, List<ModelType>> {
+    fun findAll(where: SqlExpressionBuilder.() -> Op<Boolean>): Result<RepositoryFailure, List<ModelType>> {
         return findAllRows(where)
-                .map { resultRows ->
-                    resultRows.map { it.toModel() }
+                .flatMap { resultRows ->
+                    resultRows.map { it.toModel() }.traverse()
                 }
     }
 
@@ -64,13 +61,14 @@ abstract class Repository<ModelType, in ModelNewType, IdType : Any>(private val 
                 .flatMap { it.ensureSingle() }
     }
 
-    fun findAllRows(where: SqlExpressionBuilder.() -> Op<Boolean>): Result<Unit, List<ResultRow>> {
+    fun findAllRows(where: SqlExpressionBuilder.() -> Op<Boolean>): Result<RepositoryFailure, List<ResultRow>> {
         return table.select(where)
                 .presenceAsResult()
+                .mapError { RepositoryFailure.NotFound() as RepositoryFailure }
                 .map { it.toList() }
     }
 
-    abstract protected fun ResultRow.toModel(): ModelType
+    abstract protected fun ResultRow.toModel(): Result<RepositoryFailure, ModelType>
     abstract protected fun ModelNewType.insert(insertStatement: InsertStatement<EntityID<IdType>>)
     abstract protected fun ModelType.update(updateStatement: UpdateStatement)
     abstract protected fun ModelType.toUniqueSelect(): SqlExpressionBuilder.() -> Op<Boolean>
