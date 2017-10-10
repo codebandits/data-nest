@@ -5,9 +5,7 @@ import io.codebandits.datanest.examples.springbootkotlin.group.GroupRepository
 import io.codebandits.datanest.examples.springbootkotlin.group.GroupTable
 import io.github.codebandits.datanest.Repository
 import io.github.codebandits.datanest.RepositoryFailure
-import io.github.codebandits.results.Failure
 import io.github.codebandits.results.Result
-import io.github.codebandits.results.Success
 import io.github.codebandits.results.map
 import org.jetbrains.exposed.dao.EntityID
 import org.jetbrains.exposed.dao.IntIdTable
@@ -39,7 +37,7 @@ class VehicleRepository : Repository<Vehicle, VehicleNew, Int>(VehicleTable) {
 
     override fun ResultRow.toModel(): Result<RepositoryFailure, Vehicle> {
 
-        return groupRepository.findOne(this[VehicleTable.group])
+        return groupRepository.getOne(this[VehicleTable.group])
                 .map { group ->
                     Vehicle(
                             name = this[VehicleTable.name],

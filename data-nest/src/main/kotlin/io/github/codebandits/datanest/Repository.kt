@@ -17,7 +17,7 @@ abstract class Repository<ModelType, in ModelNewType, IdType : Any>(private val 
         return wrapThrowableInResult { table.insertAndGetId { data.insert(it) } }
                 .mapError { RepositoryFailure.SaveFailed(exception = it) as RepositoryFailure }
                 .flatMap { it.presenceAsResult().mapError { RepositoryFailure.SaveFailed() as RepositoryFailure } }
-                .flatMap { findOne(it) }
+                .flatMap { getOne(it) }
     }
 
     fun update(model: ModelType): Result<RepositoryFailure, ModelType> {
@@ -32,9 +32,9 @@ abstract class Repository<ModelType, in ModelNewType, IdType : Any>(private val 
         return findOneRow(model.toUniqueSelect())
     }
 
-    fun findOne(id: IdType): Result<RepositoryFailure, ModelType> = findOne(EntityID(id, table))
+    fun getOne(id: IdType): Result<RepositoryFailure, ModelType> = getOne(EntityID(id, table))
 
-    fun findOne(id: EntityID<IdType>): Result<RepositoryFailure, ModelType> {
+    fun getOne(id: EntityID<IdType>): Result<RepositoryFailure, ModelType> {
         return table.select { table.id eq id }
                 .presenceAsResult()
                 .mapError { RepositoryFailure.NotFound() as RepositoryFailure }
@@ -55,9 +55,7 @@ abstract class Repository<ModelType, in ModelNewType, IdType : Any>(private val 
     }
 
     fun findOneRow(where: SqlExpressionBuilder.() -> Op<Boolean>): Result<RepositoryFailure, ResultRow> {
-        return table.select(where)
-                .presenceAsResult()
-                .mapError { RepositoryFailure.NotFound() as RepositoryFailure }
+        return findAllRows(where)
                 .flatMap { it.ensureSingle() }
     }
 
