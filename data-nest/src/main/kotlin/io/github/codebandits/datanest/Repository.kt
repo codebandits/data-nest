@@ -20,38 +20,60 @@ abstract class Repository<ModelType, in ModelNewType, IdType : Any>(private val 
         return wrapThrowableInResult { table.insertAndGetId { data.insert(it) } }
                 .mapError { RepositoryFailure.SaveFailed(exception = it) as RepositoryFailure }
                 .flatMap { it.presenceAsResult().mapError { RepositoryFailure.SaveFailed() as RepositoryFailure } }
-                .map { it.value }
-                .flatMap { findOne { table.id eq it } }
+                .flatMap { findOne(it) }
     }
 
     fun update(model: ModelType): Result<RepositoryFailure, ModelType> {
-        return wrapThrowableInResult { table.update(model.selectExisting()) { model.update(it) } }
+        return wrapThrowableInResult { table.update(model.toUniqueSelect()) { model.update(it) } }
                 .mapError { RepositoryFailure.SaveFailed(exception = it) as RepositoryFailure }
-                .flatMap { wrapThrowableInResult { table.select(model.selectExisting()) }.mapError { RepositoryFailure.NotFound(exception = it) as RepositoryFailure } }
+                .flatMap { wrapThrowableInResult { table.select(model.toUniqueSelect()) }.mapError { RepositoryFailure.NotFound(exception = it) as RepositoryFailure } }
                 .flatMap { it.ensureSingle() }
                 .map { resultRow -> resultRow.toModel() }
     }
 
-    fun findOne(where: SqlExpressionBuilder.() -> Op<Boolean>): Result<RepositoryFailure, ModelType> {
-        return table.select(where)
+    fun getRow(model: ModelType): Result<RepositoryFailure, ResultRow> {
+        return findOneRow(model.toUniqueSelect())
+    }
+
+    fun findOne(id: IdType): Result<RepositoryFailure, ModelType> = findOne(EntityID(id, table))
+
+    fun findOne(id: EntityID<IdType>): Result<RepositoryFailure, ModelType> {
+        return table.select { table.id eq id }
                 .presenceAsResult()
                 .mapError { RepositoryFailure.NotFound() as RepositoryFailure }
                 .flatMap { it.ensureSingle() }
+                .map { it.toModel() }
+    }
+
+    fun findOne(where: SqlExpressionBuilder.() -> Op<Boolean>): Result<RepositoryFailure, ModelType> {
+        return findOneRow(where)
                 .map { resultRow -> resultRow.toModel() }
     }
 
     fun findAll(where: SqlExpressionBuilder.() -> Op<Boolean>): Result<Unit, List<ModelType>> {
+        return findAllRows(where)
+                .map { resultRows ->
+                    resultRows.map { it.toModel() }
+                }
+    }
+
+    fun findOneRow(where: SqlExpressionBuilder.() -> Op<Boolean>): Result<RepositoryFailure, ResultRow> {
         return table.select(where)
                 .presenceAsResult()
-                .map { query ->
-                    query.map { resultRow -> resultRow.toModel() }
-                }
+                .mapError { RepositoryFailure.NotFound() as RepositoryFailure }
+                .flatMap { it.ensureSingle() }
+    }
+
+    fun findAllRows(where: SqlExpressionBuilder.() -> Op<Boolean>): Result<Unit, List<ResultRow>> {
+        return table.select(where)
+                .presenceAsResult()
+                .map { it.toList() }
     }
 
     abstract protected fun ResultRow.toModel(): ModelType
     abstract protected fun ModelNewType.insert(insertStatement: InsertStatement<EntityID<IdType>>)
     abstract protected fun ModelType.update(updateStatement: UpdateStatement)
-    abstract protected fun ModelType.selectExisting(): SqlExpressionBuilder.() -> Op<Boolean>
+    abstract protected fun ModelType.toUniqueSelect(): SqlExpressionBuilder.() -> Op<Boolean>
 }
 
 private fun <T> Iterable<T>.ensureSingle(): Result<RepositoryFailure, T> {

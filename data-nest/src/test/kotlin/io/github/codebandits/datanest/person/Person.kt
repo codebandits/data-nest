@@ -25,7 +25,7 @@ data class PersonNew(
 
 class PersonRepository : Repository<Person, PersonNew, Int>(PersonTable) {
 
-    override fun Person.selectExisting(): SqlExpressionBuilder.() -> Op<Boolean> = { PersonTable.id eq id }
+    override fun Person.toUniqueSelect(): SqlExpressionBuilder.() -> Op<Boolean> = { PersonTable.id eq id }
 
     override fun PersonNew.insert(insertStatement: InsertStatement<EntityID<Int>>) {
         insertStatement[PersonTable.name] = this.name

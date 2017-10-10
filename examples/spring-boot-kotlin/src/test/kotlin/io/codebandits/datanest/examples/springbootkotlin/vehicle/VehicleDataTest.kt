@@ -1,33 +1,48 @@
 package io.codebandits.datanest.examples.springbootkotlin.vehicle
 
 import io.codebandits.datanest.examples.springbootkotlin.BaseDataTest
+import io.codebandits.datanest.examples.springbootkotlin.group.GroupNew
+import io.codebandits.datanest.examples.springbootkotlin.group.GroupRepository
+import io.codebandits.datanest.examples.springbootkotlin.group.GroupTable
 import io.github.codebandits.results.succeedsAnd
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.springframework.transaction.annotation.Transactional
 
-open class VehicleDataTest : BaseDataTest(VehicleTable) {
+open class VehicleDataTest : BaseDataTest(GroupTable, VehicleTable) {
 
     private val vehicleRepository = VehicleRepository()
+    private val groupRepository = GroupRepository()
 
     @Test
     @Transactional
     open fun `repository can save, update, and retrieve a vehicle`() {
-        val vehicleNew = VehicleNew(name = "Milano", groupAffiliation = "Ravager")
 
-        vehicleRepository.create(vehicleNew) succeedsAnd { vehicleCreated ->
+        val ravagerNew = GroupNew(name = "Ravager")
 
-            assertThat(vehicleCreated).isEqualToComparingFieldByField(vehicleNew)
+        groupRepository.create(ravagerNew) succeedsAnd { ravagerCreated ->
 
-            vehicleRepository.findOne { VehicleTable.name eq "Milano" } succeedsAnd { vehicleFound ->
+            val milanoNew = VehicleNew(name = "Milano", group = ravagerCreated)
 
-                assertThat(vehicleFound).isEqualTo(vehicleCreated)
+            vehicleRepository.create(milanoNew) succeedsAnd { milanoCreated ->
 
-                val vehicleModified = vehicleCreated.copy(groupAffiliation = "Guardians of the Galaxy")
+                assertThat(milanoCreated).isEqualToComparingFieldByField(milanoNew)
 
-                vehicleRepository.update(vehicleModified) succeedsAnd { vehicleUpdated ->
+                vehicleRepository.findOne { VehicleTable.name eq "Milano" } succeedsAnd { milanoFound ->
 
-                    assertThat(vehicleUpdated).isEqualTo(vehicleModified)
+                    assertThat(milanoFound).isEqualTo(milanoCreated)
+
+                    val guardiansNew = GroupNew(name = "Guardians of the Galaxy")
+
+                    groupRepository.create(guardiansNew) succeedsAnd { guardiansCreated ->
+
+                        val milanoModified = milanoCreated.copy(group = guardiansCreated)
+
+                        vehicleRepository.update(milanoModified) succeedsAnd { vehicleUpdated ->
+
+                            assertThat(vehicleUpdated).isEqualTo(milanoModified)
+                        }
+                    }
                 }
             }
         }

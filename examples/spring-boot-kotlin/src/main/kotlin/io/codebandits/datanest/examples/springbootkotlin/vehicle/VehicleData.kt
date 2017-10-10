@@ -1,6 +1,12 @@
 package io.codebandits.datanest.examples.springbootkotlin.vehicle
 
+import io.codebandits.datanest.examples.springbootkotlin.group.Group
+import io.codebandits.datanest.examples.springbootkotlin.group.GroupRepository
+import io.codebandits.datanest.examples.springbootkotlin.group.GroupTable
 import io.github.codebandits.datanest.Repository
+import io.github.codebandits.results.Failure
+import io.github.codebandits.results.Success
+import io.github.codebandits.results.map
 import org.jetbrains.exposed.dao.EntityID
 import org.jetbrains.exposed.dao.IntIdTable
 import org.jetbrains.exposed.sql.Column
@@ -12,37 +18,54 @@ import org.jetbrains.exposed.sql.statements.UpdateStatement
 
 object VehicleTable : IntIdTable() {
     val name: Column<String> = varchar("name", 100).uniqueIndex()
-    val groupAffiliation: Column<String> = varchar("group_affiliation", 100)
+    val group = reference("group", GroupTable)
 }
 
 data class Vehicle(
         val name: String,
-        val groupAffiliation: String
+        val group: Group
 )
 
 data class VehicleNew(
         val name: String,
-        val groupAffiliation: String
+        val group: Group
 )
 
 class VehicleRepository : Repository<Vehicle, VehicleNew, Int>(VehicleTable) {
 
+    private val groupRepository = GroupRepository()
+
     override fun ResultRow.toModel(): Vehicle {
-        return Vehicle(
-                name = this[VehicleTable.name],
-                groupAffiliation = this[VehicleTable.groupAffiliation]
-        )
+
+        val result = groupRepository.findOne(this[VehicleTable.group])
+                .map { group ->
+                    Vehicle(
+                            name = this[VehicleTable.name],
+                            group = group
+                    )
+                }
+
+        return when (result) {
+            is Success -> result.content
+            is Failure -> TODO()
+        }
     }
 
     override fun VehicleNew.insert(insertStatement: InsertStatement<EntityID<Int>>) {
-        insertStatement[VehicleTable.name] = name
-        insertStatement[VehicleTable.groupAffiliation] = groupAffiliation
+        groupRepository.getRow(group)
+                .map { groupRow ->
+                    insertStatement[VehicleTable.name] = name
+                    insertStatement[VehicleTable.group] = groupRow[GroupTable.id]
+                }
     }
 
     override fun Vehicle.update(updateStatement: UpdateStatement) {
-        updateStatement[VehicleTable.name] = name
-        updateStatement[VehicleTable.groupAffiliation] = groupAffiliation
+        groupRepository.getRow(group)
+                .map { groupRow ->
+                    updateStatement[VehicleTable.name] = name
+                    updateStatement[VehicleTable.group] = groupRow[GroupTable.id]
+                }
     }
 
-    override fun Vehicle.selectExisting(): SqlExpressionBuilder.() -> Op<Boolean> = { VehicleTable.name eq name }
+    override fun Vehicle.toUniqueSelect(): SqlExpressionBuilder.() -> Op<Boolean> = { VehicleTable.name eq name }
 }
