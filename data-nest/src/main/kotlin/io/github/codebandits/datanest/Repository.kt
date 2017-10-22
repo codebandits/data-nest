@@ -13,14 +13,14 @@ import java.util.*
 
 abstract class Repository<ModelType, in ModelNewType, IdType : Any>(private val table: IdTable<IdType>) {
 
-    fun create(data: ModelNewType): Result<RepositoryFailure, ModelType> {
+    open fun create(data: ModelNewType): Result<RepositoryFailure, ModelType> {
         return wrapThrowableInResult { table.insertAndGetId { data.insert(it) } }
                 .mapError { RepositoryFailure.SaveFailed(exception = it) as RepositoryFailure }
                 .flatMap { it.presenceAsResult().mapError { RepositoryFailure.SaveFailed() as RepositoryFailure } }
                 .flatMap { getOne(it) }
     }
 
-    fun update(model: ModelType): Result<RepositoryFailure, ModelType> {
+    open fun update(model: ModelType): Result<RepositoryFailure, ModelType> {
         return wrapThrowableInResult { table.update(model.toUniqueSelect()) { model.update(it) } }
                 .mapError { RepositoryFailure.SaveFailed(exception = it) as RepositoryFailure }
                 .flatMap { wrapThrowableInResult { table.select(model.toUniqueSelect()) }.mapError { RepositoryFailure.NotFound(exception = it) as RepositoryFailure } }
@@ -28,13 +28,13 @@ abstract class Repository<ModelType, in ModelNewType, IdType : Any>(private val 
                 .flatMap { it.toModel() }
     }
 
-    fun getRow(model: ModelType): Result<RepositoryFailure, ResultRow> {
+    open fun getRow(model: ModelType): Result<RepositoryFailure, ResultRow> {
         return findOneRow(model.toUniqueSelect())
     }
 
-    fun getOne(id: IdType): Result<RepositoryFailure, ModelType> = getOne(EntityID(id, table))
+    open fun getOne(id: IdType): Result<RepositoryFailure, ModelType> = getOne(EntityID(id, table))
 
-    fun getOne(id: EntityID<IdType>): Result<RepositoryFailure, ModelType> {
+    open fun getOne(id: EntityID<IdType>): Result<RepositoryFailure, ModelType> {
         return table.select { table.id eq id }
                 .presenceAsResult()
                 .mapError { RepositoryFailure.NotFound() as RepositoryFailure }
@@ -42,29 +42,29 @@ abstract class Repository<ModelType, in ModelNewType, IdType : Any>(private val 
                 .flatMap { it.toModel() }
     }
 
-    fun getAll(): Result<RepositoryFailure, List<ModelType>> {
+    open fun getAll(): Result<RepositoryFailure, List<ModelType>> {
         return Success<RepositoryFailure, Query>(table.selectAll())
                 .flatMap { query -> query.map { it.toModel() }.traverse() }
     }
 
-    fun findOne(where: SqlExpressionBuilder.() -> Op<Boolean>): Result<RepositoryFailure, ModelType> {
+    open fun findOne(where: SqlExpressionBuilder.() -> Op<Boolean>): Result<RepositoryFailure, ModelType> {
         return findOneRow(where)
                 .flatMap { it.toModel() }
     }
 
-    fun findAll(where: SqlExpressionBuilder.() -> Op<Boolean>): Result<RepositoryFailure, List<ModelType>> {
+    open fun findAll(where: SqlExpressionBuilder.() -> Op<Boolean>): Result<RepositoryFailure, List<ModelType>> {
         return findAllRows(where)
                 .flatMap { resultRows ->
                     resultRows.map { it.toModel() }.traverse()
                 }
     }
 
-    fun findOneRow(where: SqlExpressionBuilder.() -> Op<Boolean>): Result<RepositoryFailure, ResultRow> {
+    open fun findOneRow(where: SqlExpressionBuilder.() -> Op<Boolean>): Result<RepositoryFailure, ResultRow> {
         return findAllRows(where)
                 .flatMap { it.ensureSingle() }
     }
 
-    fun findAllRows(where: SqlExpressionBuilder.() -> Op<Boolean>): Result<RepositoryFailure, List<ResultRow>> {
+    open fun findAllRows(where: SqlExpressionBuilder.() -> Op<Boolean>): Result<RepositoryFailure, List<ResultRow>> {
         return table.select(where)
                 .presenceAsResult()
                 .mapError { RepositoryFailure.NotFound() as RepositoryFailure }
