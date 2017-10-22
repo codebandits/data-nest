@@ -1,5 +1,6 @@
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
+val kotlinVersion: String by project.extra
 val junitJupiterVersion: String by project.extra
 val assertjVersion: String by project.extra
 val exposedVersion: String by project.extra
@@ -42,7 +43,7 @@ repositories {
 }
 
 dependencies {
-    compile("org.jetbrains.kotlin:kotlin-stdlib-jre8")
+    compile("org.jetbrains.kotlin:kotlin-stdlib-jre8:$kotlinVersion")
 
     compile("org.jetbrains.exposed:exposed:$exposedVersion")
     testRuntime("com.h2database:h2:$h2Version")
