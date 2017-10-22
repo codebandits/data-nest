@@ -42,6 +42,11 @@ abstract class Repository<ModelType, in ModelNewType, IdType : Any>(private val 
                 .flatMap { it.toModel() }
     }
 
+    fun getAll(): Result<RepositoryFailure, List<ModelType>> {
+        return Success<RepositoryFailure, Query>(table.selectAll())
+                .flatMap { query -> query.map { it.toModel() }.traverse() }
+    }
+
     fun findOne(where: SqlExpressionBuilder.() -> Op<Boolean>): Result<RepositoryFailure, ModelType> {
         return findOneRow(where)
                 .flatMap { it.toModel() }

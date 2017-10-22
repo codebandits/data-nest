@@ -64,6 +64,21 @@ class RepositoryTest {
     }
 
     @Test
+    fun `getAll should return all the objects`() {
+        transaction {
+            SchemaUtils.create(PersonTable)
+
+            repository.create(gamora)
+            repository.create(groot)
+            repository.create(starLord)
+
+            repository.getAll() succeedsAnd { people ->
+                assertThat(people).hasSize(3)
+            }
+        }
+    }
+
+    @Test
     fun `findOne by query when one result is found should return the model`() {
         transaction {
             SchemaUtils.create(PersonTable)
