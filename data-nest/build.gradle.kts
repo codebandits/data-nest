@@ -23,6 +23,7 @@ plugins {
 
 apply {
     plugin("org.junit.platform.gradle.plugin")
+    plugin("maven")
 }
 
 group = "io.github.codebandits"
